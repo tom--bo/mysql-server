@@ -77,6 +77,7 @@ pfs_tls_channel.h
 pfs_user.h
 pfs_variable.h
 pfs_visitor.h
+table_access_counts.h
 table_accounts.h
 table_all_instr.h
 table_data_lock_waits.h
@@ -241,6 +242,7 @@ pfs_variable.cc
 pfs_visitor.cc
 service_pfs_notification.cc
 service_pfs_resource_group.cc
+table_access_counts.cc
 table_accounts.cc
 table_all_instr.cc
 table_binary_log_transaction_compression_stats.cc

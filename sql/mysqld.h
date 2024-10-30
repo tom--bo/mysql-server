@@ -35,6 +35,7 @@
 
 #include <mysql/components/minimal_chassis.h>
 #include <mysql/components/services/dynamic_loader_scheme_file.h>
+#include <map>
 #include "lex_string.h"
 #include "m_ctype.h"
 #include "my_command.h"
@@ -412,6 +413,7 @@ extern ulong opt_keyring_migration_port;
 
 extern ulonglong global_conn_mem_limit;
 extern ulonglong global_conn_mem_counter;
+extern std::map<std::string, int> table_access_count;
 /**
   Variable to check if connection related options are set
   as part of keyring migration.

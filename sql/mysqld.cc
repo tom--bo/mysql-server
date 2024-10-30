@@ -1368,6 +1368,7 @@ ulong locked_account_connection_count = 0;
 
 ulonglong global_conn_mem_limit = 0;
 ulonglong global_conn_mem_counter = 0;
+std::map<std::string, int> table_access_count = std::map<std::string, int>();
 
 /**
   This variable holds handle to the object that's responsible

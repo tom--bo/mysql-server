@@ -2838,6 +2838,10 @@ int handler::ha_index_init(uint idx, bool sorted) {
   if (!(result = index_init(idx, sorted))) inited = INDEX;
   mrr_have_range = false;
   end_range = nullptr;
+  std::string db = to_string(this->table_share->db);
+  std::string tbl = to_string(this->table_share->table_name);
+  std::string key = db + "/" + tbl;
+  table_access_count[key] += 1;
   return result;
 }
 
@@ -2881,6 +2885,10 @@ int handler::ha_rnd_init(bool scan) {
   assert(inited == NONE || (inited == RND && scan));
   inited = (result = rnd_init(scan)) ? NONE : RND;
   end_range = nullptr;
+  std::string db = to_string(this->table_share->db);
+  std::string tbl = to_string(this->table_share->table_name);
+  std::string key = db + "/" + tbl;
+  table_access_count[key] += 1;
   return result;
 }
 

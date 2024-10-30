@@ -53,6 +53,7 @@
 #include "sql/table.h"
 /* For show status */
 #include "storage/perfschema/pfs_column_values.h"
+#include "storage/perfschema/table_access_counts.h"
 #include "storage/perfschema/table_accounts.h"
 #include "storage/perfschema/table_binary_log_transaction_compression_stats.h"
 #include "storage/perfschema/table_data_lock_waits.h"
@@ -547,6 +548,7 @@ static PFS_engine_table_share *all_shares[] = {
     &table_ees_global_by_error::m_share,
 
     &table_users::m_share,
+    &table_access_counts::m_share,
     &table_accounts::m_share,
     &table_hosts::m_share,
 
