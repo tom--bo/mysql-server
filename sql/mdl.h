@@ -328,6 +328,8 @@ enum enum_mdl_type {
   MDL_TYPE_END
 };
 
+std::string get_mdl_type_str(enum_mdl_type t);
+
 /** Duration of metadata lock. */
 
 enum enum_mdl_duration {
@@ -349,6 +351,8 @@ enum enum_mdl_duration {
   /* This should be the last ! */
   MDL_DURATION_END
 };
+
+std::string get_mdl_duration_str(enum_mdl_duration d);
 
 /** Maximal length of key for metadata locking subsystem. */
 #define MAX_MDLKEY_LENGTH (1 + NAME_LEN + 1 + NAME_LEN + 1)
@@ -419,6 +423,8 @@ struct MDL_key {
     /* This should be the last ! */
     NAMESPACE_END
   };
+
+  std::string get_mdl_namespace_str() const;
 
   const uchar *ptr() const { return pointer_cast<const uchar *>(m_ptr); }
   uint length() const { return m_length; }

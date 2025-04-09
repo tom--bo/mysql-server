@@ -53,6 +53,7 @@
 #include "prealloced_array.h"
 #include "sql/debug_sync.h"
 #include "sql/thr_malloc.h"
+#include "mysql/components/services/log_builtins.h"  // LogErr
 
 extern MYSQL_PLUGIN_IMPORT CHARSET_INFO *system_charset_info;
 
@@ -3344,6 +3345,95 @@ void MDL_lock::object_lock_notify_conflicting_locks(MDL_context *ctx,
   }
 }
 
+
+std::string get_mdl_type_str(enum_mdl_type t) {
+  switch(t) {
+    case  MDL_INTENTION_EXCLUSIVE:
+      return "MDL_INTENTION_EXCLUSIVE";
+    case  MDL_SHARED:
+      return "MDL_SHARED";
+    case  MDL_SHARED_HIGH_PRIO:
+      return "MDL_SHARED_HIGH_PRIO";
+    case  MDL_SHARED_READ:
+      return "MDL_SHARED_READ";
+    case  MDL_SHARED_WRITE:
+      return "MDL_SHARED_WRITE";
+    case  MDL_SHARED_WRITE_LOW_PRIO:
+      return "MDL_SHARED_WRITE_LOW_PRIO";
+    case  MDL_SHARED_UPGRADABLE:
+      return "MDL_SHARED_UPGRADABLE";
+    case  MDL_SHARED_READ_ONLY:
+      return "MDL_SHARED_READ_ONLY";
+    case  MDL_SHARED_NO_WRITE:
+      return "MDL_SHARED_NO_WRITE";
+    case  MDL_SHARED_NO_READ_WRITE:
+      return "MDL_SHARED_NO_READ_WRITE";
+    case  MDL_EXCLUSIVE:
+      return "MDL_EXCLUSIVE";
+    case MDL_TYPE_END:
+      return "MDL_TYPE_END";
+  }
+  return "ERROR UNKNOWN";
+}
+
+std::string get_mdl_duration_str(enum_mdl_duration d) {
+  switch (d) {
+    case MDL_STATEMENT:
+      return "MDL_STATEMENT";
+    case MDL_TRANSACTION:
+      return "MDL_TRANSACTION";
+    case MDL_EXPLICIT:
+      return "MDL_TRANSACTION";
+    case MDL_DURATION_END:
+      return "MDL_DURATION_END";
+  }
+  return "UNKNOWN_DURATION";
+}
+
+std::string MDL_key::get_mdl_namespace_str() const {
+  switch(MDL_key::mdl_namespace()) {
+    case GLOBAL:
+      return "GLOBAL";
+    case BACKUP_LOCK:
+      return "BACKUP_LOCK";
+    case TABLESPACE:
+      return "TABLESPACE";
+    case SCHEMA:
+      return "SCHEMA";
+    case TABLE:
+      return "TABLE";
+    case FUNCTION:
+      return "FUNCTION";
+    case PROCEDURE:
+      return "PROCEDURE";
+    case TRIGGER:
+      return "TRIGGER";
+    case EVENT:
+      return "EVENT";
+    case COMMIT:
+      return "COMMIT";
+    case USER_LEVEL_LOCK:
+      return "USER_LEVEL_LOCK";
+    case LOCKING_SERVICE:
+      return "LOCKING_SERVICE";
+    case SRID:
+      return "SRID";
+    case ACL_CACHE:
+      return "ACL_CACHE";
+    case COLUMN_STATISTICS:
+      return "COLUMN_STATISTICS";
+    case RESOURCE_GROUPS:
+      return "RESOURCE_GROUPS";
+    case FOREIGN_KEY:
+      return "FOREIGN_KEY";
+    case CHECK_CONSTRAINT:
+      return "CHECK_CONSTRAINT";
+    case NAMESPACE_END:
+      return "NAMESPACE_END";
+  }
+  return "UNKNOWN";
+}
+
 /**
   Acquire one lock with waiting for conflicting locks to go away if needed.
 
@@ -3387,6 +3477,14 @@ bool MDL_context::acquire_lock(MDL_request *mdl_request,
     return false;
   }
 
+  std::string mdl_msg = std::string("[MyLog] MDL_context::acquire_lock")
+                        + ", key_ns: " + mdl_request->key.get_mdl_namespace_str()
+                        + ", db_name: " + mdl_request->key.db_name()
+                        + ", name: " + mdl_request->key.name()
+                        + ", type: " + get_mdl_type_str(mdl_request->type)
+                        + ", duration: " + get_mdl_duration_str(mdl_request->duration);
+  LogErr(ERROR_LEVEL, ER_MY_DEBUGPRINT, mdl_msg.c_str());
+
   /* Normal, non-zero timeout case. */
 
   MDL_lock *lock;
@@ -3396,7 +3494,9 @@ bool MDL_context::acquire_lock(MDL_request *mdl_request,
   /* Do some work outside the critical section. */
   set_timespec(&abs_timeout, lock_wait_timeout);
 
-  if (try_acquire_lock_impl(mdl_request, &ticket)) return true;
+  if (try_acquire_lock_impl(mdl_request, &ticket)) {
+    return true;
+  }
 
   if (mdl_request->ticket) {
     /*
@@ -3768,6 +3868,13 @@ bool MDL_context::upgrade_shared_lock(MDL_ticket *mdl_ticket,
 
   lock = mdl_ticket->m_lock;
 
+  std::string mdl_msg = std::string("[MyLog] MDL_context::upgrade_shared_lock")
+                        + ", key_ns: " + lock->key.get_mdl_namespace_str()
+                        + ", db_name: " + lock->key.db_name()
+                        + ", name: " + lock->key.name()
+                        + ", type: " + get_mdl_type_str(new_type);
+  LogErr(ERROR_LEVEL, ER_MY_DEBUGPRINT, mdl_msg.c_str());
+
   /* Code below assumes that we were upgrading to "obtrusive" type of lock. */
   assert(lock->is_obtrusive_lock(new_type));
 
@@ -4097,6 +4204,12 @@ void MDL_context::release_lock(enum_mdl_duration duration, MDL_ticket *ticket) {
   MDL_key key_for_hton;
   DBUG_TRACE;
   DBUG_PRINT("enter", ("db=%s name=%s", lock->key.db_name(), lock->key.name()));
+
+  std::string mdl_msg = std::string("[MyLog] MDL_context::release_lock")
+                        + ", key_ns: " + lock->key.get_mdl_namespace_str()
+                        + ", db_name: " + lock->key.db_name()
+                        + ", name: " + lock->key.name();
+  LogErr(ERROR_LEVEL, ER_MY_DEBUGPRINT, mdl_msg.c_str());
 
   assert(this == ticket->get_ctx());
   mysql_mutex_assert_not_owner(&LOCK_open);
